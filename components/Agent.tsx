@@ -1,12 +1,18 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { vapi } from "@/lib/vapi.sdk";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { interviewer } from "@/constants";
+import { useEffect, useState } from "react";
+import {
+  createFeedback,
+  getFeedbackByInterviewId,
+} from "@/lib/actions/general.action";
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -31,6 +37,7 @@ const Agent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
+  const [hasFeedback, setHasFeedback] = useState(false);
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
@@ -65,10 +72,12 @@ const Agent = ({
     console.log("Generate feedback here.");
 
     // TODO: Create server action that generates feedback
-    const { success, id } = {
-      success: true,
-      id: "feedback-id",
-    };
+
+    const { success, feedbackId: id } = await createFeedback({
+      interviewId: interviewId!,
+      userId: userId!,
+      transcript: messages,
+    });
 
     if (success && id) {
       router.push(`/interview/${interviewId}/feedback`);
@@ -127,6 +136,22 @@ const Agent = ({
     vapi.stop();
   };
 
+  useEffect(() => {
+    const checkFeedback = async () => {
+      if (!interviewId || !userId) return;
+      const feedback = await getFeedbackByInterviewId({
+        interviewId,
+        userId,
+      });
+      if (feedback) {
+        setHasFeedback(true);
+      } else {
+        setHasFeedback(false);
+      }
+    };
+    checkFeedback();
+  }, [interviewId, userId]);
+
   const lastMessage = messages[messages.length - 1]?.content;
   const isCallInactiveOrFinished =
     callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
@@ -175,9 +200,9 @@ const Agent = ({
           </div>
         </div>
       )}
-      <div className="flex w-full justify-center">
+      <div className="flex w-full justify-center gap-2">
         {callStatus !== "ACTIVE" ? (
-          <button className="btn-call relative" onClick={handleCall}>
+          <Button variant="call" className="relative" onClick={handleCall}>
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
@@ -185,11 +210,18 @@ const Agent = ({
               )}
             />
             <span>{isCallInactiveOrFinished ? "Call" : ". . ."}</span>
-          </button>
+          </Button>
         ) : (
-          <button className="btn-disconnect" onClick={handleDisconnect}>
+          <Button variant="disconnect" onClick={handleDisconnect}>
             End
-          </button>
+          </Button>
+        )}
+        {hasFeedback && (
+          <Button asChild variant="secondary">
+            <Link href={`/interview/${interviewId}/feedback`}>
+              View Feedback
+            </Link>
+          </Button>
         )}
       </div>
     </>

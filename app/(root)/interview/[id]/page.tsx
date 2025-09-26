@@ -1,15 +1,16 @@
 import Image from "next/image";
+import Agent from "@/components/Agent";
+import DisplayTechIcons from "@/components/DisplayTechIcons";
 
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/actions/auth.action";
 import { getInterviewById } from "@/lib/actions/general.action";
 import { getRandomInterviewCover } from "@/lib/utils";
-import DisplayTechIcons from "@/components/DisplayTechIcons";
-import Agent from "@/components/Agent";
-import { getCurrentUser } from "@/lib/actions/auth.action";
 
 const Page = async ({ params }: RouteParams) => {
   const { id } = await params;
   const user = await getCurrentUser();
+
   const interview = await getInterviewById(id);
 
   if (!interview) redirect("/");
@@ -36,7 +37,7 @@ const Page = async ({ params }: RouteParams) => {
       </div>
 
       <Agent
-        userName={user?.name}
+        userName={user?.name || ""}
         userId={user?.id}
         interviewId={id}
         type="interview"

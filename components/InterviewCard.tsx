@@ -1,24 +1,34 @@
-import DisplayTechIcons from "@/components/DisplayTechIcons";
-import { Button } from "@/components/ui/button";
-import { getRandomInterviewCover } from "@/lib/utils";
-import dayjs from "dayjs";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import Image from "next/image";
+import dayjs from "dayjs";
+import DisplayTechIcons from "@/components/DisplayTechIcons";
 
-const InterviewCard = ({
+import { Button } from "@/components/ui/button";
+import { getRandomInterviewCover } from "@/lib/utils";
+import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
+import { getCurrentUser } from "@/lib/actions/auth.action";
+
+const InterviewCard = async ({
   id,
-  userId,
   role,
   type,
   techstack,
   createdAt,
 }: InterviewCardProps) => {
-  const feedback = null as Feedback | null;
+  const user = await getCurrentUser();
+  const feedback =
+    user && id
+      ? ((await getFeedbackByInterviewId({
+          interviewId: id,
+          userId: user?.id,
+        })) as Feedback)
+      : null;
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
   const formattedDate = dayjs(
     feedback?.createdAt || createdAt || Date.now(),
   ).format("MMM D, YYYY");
+
   return (
     <div className="card-border min-h-96 w-[360px] max-sm:w-full">
       <div className="card-interview">
@@ -60,13 +70,9 @@ const InterviewCard = ({
         </div>
         <div className="flex flex-row justify-between">
           <DisplayTechIcons techStack={techstack} />
-          <Button className="btn-primary">
+          <Button asChild className="btn-primary">
             <Link
-              href={
-                feedback
-                  ? `/interview/${id}/feedback`
-                  : `/interview/${id}`
-              }
+              href={feedback ? `/interview/${id}/feedback` : `/interview/${id}`}
             >
               {feedback ? "Check feedback" : "View interview"}
             </Link>
